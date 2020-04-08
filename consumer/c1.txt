@@ -1,0 +1,6 @@
+egg
+milk
+bread
+wine
+vodka
+beef

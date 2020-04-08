@@ -120,7 +120,7 @@ public class TextFileIndexer {
             
             // we have used query parser over here
             
-            String FIELD_CONTENTS[] ={"Link","Title","Authors"};
+            String FIELD_CONTENTS[] ={"Link","Title","Authors","contents"};
             Query q = new MultiFieldQueryParser(FIELD_CONTENTS,analyzer).parse(s);
              
             searcher.search(q, collector);
@@ -164,8 +164,8 @@ public class TextFileIndexer {
         // add contents of file
         //===================================================
         fr = new FileReader(f);
-        doc = ReadCSV.read(doc, f, "|");
-        // doc.add(new TextField("contents", fr));
+        //doc = ReadCSV.read(doc, f, "|");
+        doc.add(new TextField("contents", fr));
         doc.add(new StringField("path", f.getPath(), Field.Store.YES));
         doc.add(new StringField("filename", f.getName(), Field.Store.YES));
 
