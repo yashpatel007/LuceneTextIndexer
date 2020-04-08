@@ -31,12 +31,14 @@ import org.apache.lucene.util.Version;
 
 import java.io.*;
 import java.util.ArrayList;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 /**
  *
  * @author Yash Patel
  */
 public class TextFileIndexer {
     
+   // standard analyzer have stop filter and lowercase filter // simpleanalyzer don't
    private static StandardAnalyzer analyzer = new StandardAnalyzer();
 
   private IndexWriter writer;
@@ -46,89 +48,95 @@ public class TextFileIndexer {
     * @param indexDir the name of the folder in which the index should be created
     * @throws java.io.IOException when exception creating index.
     */
-  TextFileIndexer(String indexDir) throws IOException {
-    // the boolean true parameter means to create a new index everytime, 
-    // potentially overwriting any existing files there.
-    FSDirectory dir = FSDirectory.open(new File(indexDir).toPath());
+    TextFileIndexer(String indexDir) throws IOException {
+        // the boolean true parameter means to create a new index everytime, 
+        // potentially overwriting any existing files there.
+        FSDirectory dir = FSDirectory.open(new File(indexDir).toPath());
 
 
-    IndexWriterConfig config = new IndexWriterConfig(analyzer);
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
 
-    writer = new IndexWriter(dir, config);
-  }
+        writer = new IndexWriter(dir, config);
+    }
   
     public static void main(String[] args) throws  IOException{
-    System.out.println("hello world");
-    System.out.println("path to target index folder");
+        System.out.println("hello world");
+        System.out.println("path to target index folder");
 
-    String indexLocation = null;
-    BufferedReader br = new BufferedReader(
-            new InputStreamReader(System.in));
-    String s = br.readLine();
+        String indexLocation = null;
+        BufferedReader br = new BufferedReader(
+                new InputStreamReader(System.in));
+        String s = br.readLine();
 
-    TextFileIndexer indexer = null;
-    try {
-      indexLocation = s;
-      indexer = new TextFileIndexer(s);
-    } catch (Exception ex) {
-      System.out.println("Cannot create index..." + ex.getMessage());
-      System.exit(-1);
-    }
-
-    //===================================================
-    //read input from user until he enters q for quit
-    //===================================================
-    while (!s.equalsIgnoreCase("q")) {
-      try {
-        System.out.println("Enter the full path to add into the index (q=quit): (e.g. /home/ron/mydir or c:/Users/ron/mydir)");
-        System.out.println("[Acceptable file types: .xml,.html, .txt]");
-        s = br.readLine();
-        if (s.equalsIgnoreCase("q")) {
-          break;
+        TextFileIndexer indexer = null;
+        try {
+          indexLocation = s;
+          indexer = new TextFileIndexer(s);
+        } catch (Exception ex) {
+          System.out.println("Cannot create index..." + ex.getMessage());
+          System.exit(-1);
         }
 
-        //try to add file into the index
-        indexer.indexFileOrDirectory(s);
-      } catch (Exception e) {
-        System.out.println("Error indexing " + s + " : " + e.getMessage());
-      }
-    }
+        //===================================================
+        //read input from user until he enters q for quit
+        //===================================================
+        while (!s.equalsIgnoreCase("q")) {
+          try {
+            System.out.println("Enter the full path to add into the index (q=quit): (e.g. /home/ron/mydir or c:/Users/ron/mydir)");
+            System.out.println("[Acceptable file types: .xml,.html, .txt]");
+            s = br.readLine();
+            if (s.equalsIgnoreCase("q")) {
+              break;
+            }
 
-    //===================================================
-    //after adding, we always have to call the
-    //closeIndex, otherwise the index is not created    
-    //===================================================
-    indexer.closeIndex();
-
-    //=========================================================
-    // Now search
-    //=========================================================
-    IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(indexLocation).toPath()));
-    IndexSearcher searcher = new IndexSearcher(reader);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(5);
-
-    s = "";
-    while (!s.equalsIgnoreCase("q")) {
-      try {
-        System.out.println("Enter the search query (q=quit):");
-        s = br.readLine();
-        if (s.equalsIgnoreCase("q")) {
-          break;
+            //try to add file into the index
+            indexer.indexFileOrDirectory(s);
+            }catch (Exception e) {
+            System.out.println("Error indexing " + s + " : " + e.getMessage());
+          }
         }
-        Query q = new QueryParser("contents", analyzer).parse(s);
-        searcher.search(q, collector);
-        ScoreDoc[] hits = collector.topDocs().scoreDocs;
-        // 4. display results
-        System.out.println("Found " + hits.length + " hits.");
-        for(int i=0;i<hits.length;++i) {
-          int docId = hits[i].doc;
-          Document d = searcher.doc(docId);
-          System.out.println((i + 1) + ". " + d.get("path") + " score=" + hits[i].score);
+
+        //===================================================
+        //after adding, we always have to call the
+        //closeIndex, otherwise the index is not created    
+        //===================================================
+        indexer.closeIndex();
+
+        //=========================================================
+        // Now search
+        //=========================================================
+        IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(indexLocation).toPath()));
+        IndexSearcher searcher = new IndexSearcher(reader);
+        TopScoreDocCollector collector = TopScoreDocCollector.create(5);
+
+        s = "";
+        while (!s.equalsIgnoreCase("q")) {
+          try {
+            System.out.println("Enter the search query (q=quit):");
+            s = br.readLine();
+            if (s.equalsIgnoreCase("q")) {
+              break;
+            }
+            
+            // we have used query parser over here
+            
+            String FIELD_CONTENTS[] ={"Link","Title","Authors"};
+            Query q = new MultiFieldQueryParser(FIELD_CONTENTS,analyzer).parse(s);
+             
+            searcher.search(q, collector);
+            ScoreDoc[] hits = collector.topDocs().scoreDocs;
+            //display results
+            System.out.println("Found " + hits.length + " hits.");
+            for(int i=0;i<hits.length;++i) {
+              int docId = hits[i].doc;
+              Document d = searcher.doc(docId);
+              System.out.println((i + 1) + ". " + d.get("path") + " score=" + hits[i].score);
+                System.out.println(d.get("Title"));
+            }
+          } catch (Exception e) {
+            System.out.println("Error searching " + s + " : " + e.getMessage());
+          }
         }
-      } catch (Exception e) {
-        System.out.println("Error searching " + s + " : " + e.getMessage());
-      }
-    }
 
   }
   /**
@@ -142,6 +150,8 @@ public class TextFileIndexer {
     //the name of a folder) or gets a single file name (is user
     //has submitted only the file name) 
     //===================================================
+    
+    //add file to the que
     addFiles(new File(fileName));
     
     int originalNumDocs = writer.numDocs();
@@ -154,8 +164,9 @@ public class TextFileIndexer {
         // add contents of file
         //===================================================
         fr = new FileReader(f);
-        doc.add(new TextField("contents", fr));
-        doc.add(new StringField("path", f.getPath(), Field.Store.YES));
+        doc = ReadCSV.read(doc, f, "|");
+        // doc.add(new TextField("contents", fr));
+        //doc.add(new StringField("path", f.getPath(), Field.Store.YES));
         doc.add(new StringField("filename", f.getName(), Field.Store.YES));
 
         writer.addDocument(doc);
@@ -182,10 +193,13 @@ public class TextFileIndexer {
       System.out.println(file + " does not exist.");
     }
     if (file.isDirectory()) {
+        // if directory add all files
       for (File f : file.listFiles()) {
-        addFiles(f);
+          // recursive function
+          addFiles(f);
       }
     } else {
+        
       String filename = file.getName().toLowerCase();
       //===================================================
       // Only index text files
