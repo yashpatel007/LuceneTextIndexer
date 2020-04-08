@@ -131,7 +131,7 @@ public class TextFileIndexer {
               int docId = hits[i].doc;
               Document d = searcher.doc(docId);
               System.out.println((i + 1) + ". " + d.get("path") + " score=" + hits[i].score);
-                System.out.println(d.get("Title"));
+               System.out.println(hits[i].shardIndex);
             }
           } catch (Exception e) {
             System.out.println("Error searching " + s + " : " + e.getMessage());
@@ -166,7 +166,7 @@ public class TextFileIndexer {
         fr = new FileReader(f);
         doc = ReadCSV.read(doc, f, "|");
         // doc.add(new TextField("contents", fr));
-        //doc.add(new StringField("path", f.getPath(), Field.Store.YES));
+        doc.add(new StringField("path", f.getPath(), Field.Store.YES));
         doc.add(new StringField("filename", f.getName(), Field.Store.YES));
 
         writer.addDocument(doc);

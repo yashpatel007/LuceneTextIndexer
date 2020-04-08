@@ -21,19 +21,22 @@ import org.apache.lucene.document.TextField;
  */
 public class ReadCSV {
     public static Document  read(Document doc, File file,String seperator) throws FileNotFoundException, IOException{
+    int count=0;
     try (BufferedReader br = new BufferedReader(new FileReader(file))) {
     String line;
+    
     while ((line = br.readLine()) != null) {
        // process the line.
         // assuming the line is CSV
         String vals[] = line.split("\\"+seperator);
-         doc.add(new TextField("Link", vals[0].toLowerCase(),Field.Store.YES));
-         doc.add(new StringField("Topic", vals[1].toLowerCase(),Field.Store.YES));
-         doc.add(new TextField("Title", vals[2].toLowerCase(),Field.Store.YES));
-         doc.add(new TextField("Authors", vals[3].toLowerCase(),Field.Store.YES));
-        }
+         doc.add(new TextField("Link", vals[0],Field.Store.YES));
+         doc.add(new StringField("Topic", vals[1],Field.Store.YES));
+         doc.add(new TextField("Title", vals[2],Field.Store.YES));
+         doc.add(new TextField("Authors", vals[3],Field.Store.YES));
+         count++;
+    }
      }//try ends
-    
+        System.out.println("added firlds"+ String.valueOf(count));
     return doc;
     }
 }
